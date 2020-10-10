@@ -1,42 +1,39 @@
 #! /bin/bash
-#
-# Copyright: 2017 Petter Reinholdtsen
-#            2017 Anders Einar Hilden
-#
-#
-# This is free and unencumbered software released into the public domain.
-#
-# Anyone is free to copy, modify, publish, use, compile, sell, or
-# distribute this software, either in source code form or as a compiled
-# binary, for any purpose, commercial or non-commercial, and by any
-# means.
-#
-# In jurisdictions that recognize copyright laws, the author or authors
-# of this software dedicate any and all copyright interest in the
-# software to the public domain. We make this dedication for the benefit
-# of the public at large and to the detriment of our heirs and
-# successors. We intend this dedication to be an overt act of
-# relinquishment in perpetuity of all present and future rights to this
-# software under copyright law.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
-#
-# For more information, please refer to <http://unlicense.org/>
-#
 
 cachedir=cache
+
+default_gateway=$(netstat -rn | grep '^\(default\|0\.0\.0\.0\)' | awk '{print $2}')
 
 header() {
     cat <<HEADER
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
+<Document>
+
+<Style id="source">
+<IconStyle>
+<Icon>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/flag.png</href>
+</Icon>
+</IconStyle>
+</Style>
+
+<Style id="jump">
+<IconStyle>
+<Icon>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/server.png</href>
+</Icon>
+</IconStyle>
+</Style>
+
+<Style id="destination">
+<IconStyle>
+<Icon>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/destination.png</href>
+</Icon>
+</IconStyle>
+</Style>
+
 HEADER
 }
 
@@ -46,7 +43,7 @@ gettraceroute4() {
     if [ -s "$storename" ] ; then
 	cat "$storename"
     else
-	sudo tcptraceroute -n $1 | tee "$tmpname"
+    traceroute -T -n $1 | tee "$tmpname"
     fi |
 	tail -n +2 |
 	sed 's/\* //g' |
@@ -57,66 +54,64 @@ gettraceroute4() {
     fi
 }
 
-urlencode() {
-    # urlencode <string>
-    local length="${#1}"
-    for (( i = 0; i < length; i++ )); do
-        local c="${1:i:1}"
-        case $c in
-            [a-zA-Z0-9.~_-]) printf "$c" ;;
-            *) printf '%s' "$c" | xxd -p -c1 |
-                   while read c; do printf '%%%s' "$c"; done ;;
-        esac
-    done
-}
-
 getIP4location() {
+    local C=""
+    
     if [ -e GeoIP-override.txt ] ; then
 	C="$(grep "^$IP " GeoIP-override.txt | cut -d"#" -f1)"
     fi
+   
     if [ -z "$C" ] && [ -e "$cachedir/GeoIP-cache.txt" ] ; then
-	C="$(grep "^$IP " "$cachedir/GeoIP-cache.txt")"
+    C=$(grep -m 1 "^$IP " "$cachedir/GeoIP-cache.txt")
     fi
+
     if [ "$C" ]; then
 	LONG=$(echo "$C" |cut -d" " -f2)
 	LAT=$(echo "$C" |cut -d" " -f3)
 	return
     fi
-    # Remove very inaccurate info
-    #GEOIP=$(geoiplookup -f GeoLiteCity.dat $IP);
     LONG=
     LAT=
-    #if [ "$GEOIP" ] && [ "$(echo "$GEOIP" | grep -q "IP Address not found"; echo $?;)" != "0" ]; then
-	#LONG=$(echo "$GEOIP" | cut -d, -f 8)
-	#LAT=$(echo "$GEOIP" | cut -d, -f 7)
-	#echo $IP $LONG $LAT >> "$cachedir/GeoIP-cache.txt"
-    #fi
-    #EncodedIP=$(urlencode($IP))
-    #echo -e "IP=$EncodedIP" 
+    
+    if [ "$default_gateway" = "$IP" ]; then
+    url=https://freegeoip.live/json/
+    else
     url=https://freegeoip.live/json/$IP
-    #echo -e "$url"
+    fi
+    
     LOCATION=$(curl -s $url | jq -r '.longitude, .latitude')
-    #echo -e "$LOCATION"
+
     if [ "$LOCATION" ]; then
     read LONG LAT < <(echo $LOCATION)
     echo $IP $LONG $LAT >> "$cachedir/GeoIP-cache.txt"
     fi
+
 }
 
 tracehost() {
     targetip="$1"
     targetname="$2"
-    LONGLATS=""
+    local LONGLATS=""
+    local ICON=""
     targetreverse=$(getent hosts "$targetip"|awk '{print $2}')
     echo "<!-- traceroute for $targetname / $targetreverse [$targetip] -->"
-    for IP in $(gettraceroute4 "$targetip"); do
-	getIP4location "$IP"
+    IPS=($(gettraceroute4 "$targetip"))
+    for IP in "${IPS[@]}"; do
+    getIP4location "$IP"
 	name=$(getent hosts "$IP" | awk '{print $2}')
 	if [ "$LONG" ] ; then
 	    LONGLAT="${LONG},${LAT} "
 	    LONGLATS="${LONGLATS}${LONGLAT}\n"
+
+        ICON="jump"
+
+        if [ "$IP" = "${IPS[0]}" ]; then
+            ICON="source"
+        fi
+
 	    if [ "$targetip" = "$IP" ]; then
 		labelname="$targetname"
+        ICON="destination"
 	    else
 		labelname=""
 	    fi
@@ -124,8 +119,9 @@ tracehost() {
 <Placemark>
   <name>$labelname</name>
   <description>GeoIP position for $name [$IP]</description>
+  <styleUrl>#$ICON</styleUrl> 
   <Point><coordinates>$LONGLAT</coordinates></Point>
-</Placemark>"
+</Placemark>
 EOF
 	else
 	    echo "<!-- missing GeoIP info for $name [$IP] -->"
@@ -168,7 +164,6 @@ fi
 
 header
 for h in "$@" ; do
-    # Trace all locations if host have many IP addresses
     for ip in $(host $h|awk '/has address/ {print $4}'); do
 	tracehost "$ip" "$h"
     done
