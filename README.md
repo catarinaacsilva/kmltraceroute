@@ -2,7 +2,7 @@
 
 Tool to create geo-referenced TCP traceroutes in KML format for visualization on a map/globe.  It can only handle IPv4 routes.
 
-KML files can be viewed using this [link](http://ivanrublev.me/kml/), OpenLayers, Google Earth and other tools.
+KML files can be viewed using this [link](http://ivanrublev.me/kml/) or this [link](http://kmlviewer.nsspot.net/)
 
 The code use this [api](https://freegeoip.live/) to search the geolocation of IP addresses
 
@@ -13,6 +13,13 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 - jq
 - curl
 - net-tools
+
+# Run
+
+1. `sudo ./kmltraceroute <IP OR NAME>  >trace.kml`
+
+2. Open, e.g this [link](http://kmlviewer.nsspot.net/) and choose file `trace.kml`
+
 
 ## Authors
 
