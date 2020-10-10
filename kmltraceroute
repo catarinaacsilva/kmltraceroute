@@ -1,8 +1,8 @@
 #! /bin/bash
 
 cachedir=cache
-
-default_gateway=$(netstat -rn | grep '^\(default\|0\.0\.0\.0\)' | awk '{print $2}')
+gateways=($(netstat -rn | grep '^\(default\|0\.0\.0\.0\)' | awk '{print $2}'))
+default_gateway=${gateways[0]}
 
 header() {
     cat <<HEADER

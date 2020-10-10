@@ -9,9 +9,10 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 ## Requirements
 
 - Ubuntu 20.04 (optional)
-- tcptraceroute
+- traceroute
 - jq
 - curl
+- net-tools
 
 ## Authors
 
