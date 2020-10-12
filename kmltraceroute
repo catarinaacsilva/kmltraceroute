@@ -13,7 +13,7 @@ header() {
 <Style id="source">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/flag.png</href>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/flag.png</href>
 </Icon>
 </IconStyle>
 </Style>
@@ -21,7 +21,7 @@ header() {
 <Style id="jump">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/server.png</href>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/server.png</href>
 </Icon>
 </IconStyle>
 </Style>
@@ -29,7 +29,7 @@ header() {
 <Style id="destination">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/destination.png</href>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/destination.png</href>
 </Icon>
 </IconStyle>
 </Style>
@@ -37,7 +37,7 @@ header() {
 <Style id="lost">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/wrong.png</href>
+<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/wrong.png</href>
 </Icon>
 </IconStyle>
 </Style>
