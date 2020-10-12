@@ -1,8 +1,8 @@
 #! /bin/bash
 
 cachedir=cache
-gateways=($(netstat -rn | grep '^\(default\|0\.0\.0\.0\)' | awk '{print $2}'))
-default_gateway=${gateways[0]}
+
+default_gateway=$(netstat -rn | grep '^\(default\|0\.0\.0\.0\)' | awk '{print $2}')
 
 header() {
     cat <<HEADER
@@ -13,7 +13,7 @@ header() {
 <Style id="source">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/flag.png</href>
+<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/flag.png</href>
 </Icon>
 </IconStyle>
 </Style>
@@ -21,7 +21,7 @@ header() {
 <Style id="jump">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/server.png</href>
+<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/server.png</href>
 </Icon>
 </IconStyle>
 </Style>
@@ -29,7 +29,15 @@ header() {
 <Style id="destination">
 <IconStyle>
 <Icon>
-<href>https://raw.githubusercontent.com/catarinaacsilva/kmltraceroute/master/icons/destination.png</href>
+<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/destination.png</href>
+</Icon>
+</IconStyle>
+</Style>
+
+<Style id="lost">
+<IconStyle>
+<Icon>
+<href>https://raw.githubusercontent.com/mariolpantunes/kmltraceroute/master/icons/wrong.png</href>
 </Icon>
 </IconStyle>
 </Style>
@@ -46,16 +54,18 @@ gettraceroute4() {
     traceroute -T -n $1 | tee "$tmpname"
     fi |
 	tail -n +2 |
-	sed 's/\* //g' |
-	awk '{print $2}' |
-	grep -E '^([0-9]{1,3}[\.]){3}[0-9]{1,3}$'
+	awk '{print $2" "$3}' | 
+    grep -v '[*]'
+    #awk '{print $2}' |
+	#grep -E '^([0-9]{1,3}[\.]){3}[0-9]{1,3}$'
     if [ -s "$tmpname" ] ; then
-	mv "$tmpname" "$storename"
+	    mv "$tmpname" "$storename"
     fi
 }
 
 getIP4location() {
     local C=""
+    local IP=$1
     
     if [ -e GeoIP-override.txt ] ; then
 	C="$(grep "^$IP " GeoIP-override.txt | cut -d"#" -f1)"
@@ -70,8 +80,9 @@ getIP4location() {
 	LAT=$(echo "$C" |cut -d" " -f3)
 	return
     fi
-    LONG=
-    LAT=
+
+    LONG=""
+    LAT=""
     
     if [ "$default_gateway" = "$IP" ]; then
     url=https://freegeoip.live/json/
@@ -80,12 +91,10 @@ getIP4location() {
     fi
     
     LOCATION=$(curl -s $url | jq -r '.longitude, .latitude')
-
     if [ "$LOCATION" ]; then
     read LONG LAT < <(echo $LOCATION)
     echo $IP $LONG $LAT >> "$cachedir/GeoIP-cache.txt"
     fi
-
 }
 
 tracehost() {
@@ -95,50 +104,121 @@ tracehost() {
     local ICON=""
     targetreverse=$(getent hosts "$targetip"|awk '{print $2}')
     echo "<!-- traceroute for $targetname / $targetreverse [$targetip] -->"
-    IPS=($(gettraceroute4 "$targetip"))
-    for IP in "${IPS[@]}"; do
+    #IPS=($(gettraceroute4 "$targetip"))
+    RES=$(gettraceroute4 "$targetip")
+    
+    IPS=()
+    RTLS=()
+
+    while IFS= read -r line; do
+    IPS+=($(echo $line | awk '{print $1}'))
+    RTLS+=($(echo $line | awk '{print $2}'))
+    done <<< "$RES"
+
+    max=${RTLS[0]}
+    min=${RTLS[1]}
+
+    for i in "${RTLS[@]}"; do
+        #echo -e $i
+        (( $(echo "$i > $max" |bc -l) )) && max=$i
+        #(( $(echo "$i < $min" |bc -l) )) && min=$i
+    done
+
+    #echo "Max value is $max, minimal value is $min"
+
+    STEP=$(echo "($max-$min)/5.0" |bc -l)
+    #echo -e "STEP = $STEP"
+    THRES1=$(echo "$min + $STEP" |bc -l)
+    #echo -e "THRES1 = $THRES1"
+    THRES2=$(echo "$THRES1 + $STEP" |bc -l)
+    #echo -e "THRES2 = $THRES2"
+    THRES3=$(echo "$THRES2 + $STEP" |bc -l)
+    #echo -e "THRES3 = $THRES3"
+    THRES4=$(echo "$THRES3 + $STEP" |bc -l)
+    #echo -e "THRES4 = $THRES4"
+
+    END=$(expr ${#IPS[@]} - 1)
+    for i in $(seq 0 $END); do
+    
+    IP=${IPS[i]}
+    NEXT_IP=${IPS[((i+1))]}
+
     getIP4location "$IP"
 	name=$(getent hosts "$IP" | awk '{print $2}')
-	if [ "$LONG" ] ; then
-	    LONGLAT="${LONG},${LAT} "
-	    LONGLATS="${LONGLATS}${LONGLAT}\n"
+	LONGLAT="${LONG},${LAT} "
 
-        ICON="jump"
+    getIP4location "$NEXT_IP"
+	NEXTLONGLAT="${LONG},${LAT} "
 
-        if [ "$IP" = "${IPS[0]}" ]; then
-            ICON="source"
-        fi
+    ICON="jump"
+    if [ "$IP" = "${IPS[0]}" ]; then
+        ICON="source"
+    fi
 
-	    if [ "$targetip" = "$IP" ]; then
+	if [ "$targetip" = "$IP" ]; then
 		labelname="$targetname"
         ICON="destination"
-	    else
+	else
 		labelname=""
-	    fi
-            cat <<EOF
+	fi
+
+    if [ "$LONGLAT" = "0,0 " ]; then
+        ICON="lost"
+    fi
+
+    cat <<EOF
 <Placemark>
-  <name>$labelname</name>
-  <description>GeoIP position for $name [$IP]</description>
-  <styleUrl>#$ICON</styleUrl> 
-  <Point><coordinates>$LONGLAT</coordinates></Point>
+<name>$labelname</name>
+<description>GeoIP position for $name [$IP]</description>
+<styleUrl>#$ICON</styleUrl> 
+<Point><coordinates>$LONGLAT</coordinates></Point>
 </Placemark>
 EOF
-	else
-	    echo "<!-- missing GeoIP info for $name [$IP] -->"
-	fi
-    done;
 
-    echo "<Placemark><name>Path for $targetname / $targetreverse [$targetip]</name><LineString>"
-    echo "  <coordinates>"
-    #echo -e "${LONGLATS::-2}"
-    echo -e "$LONGLATS"
-    echo "  </coordinates></LineString></Placemark>"
-    echo
+    if [ $i -lt $END ]; then
+        RTL=${RTLS[((i+1))]}
+        local COLOR="ff3b55ed"
+       
+        if (( $(echo "$RTL <= $THRES4" |bc -l) )); then
+            COLOR="ff5cd5f6"
+        fi
+
+        if (( $(echo "$RTL <= $THRES3" |bc -l) )); then
+            COLOR="ffa3ae3c"
+        fi
+
+        if (( $(echo "$RTL <= $THRES2" |bc -l) )); then
+            COLOR="ff9b6320"
+        fi
+
+        if (( $(echo "$RTL <= $THRES1" |bc -l) )); then
+            COLOR="ff5f3f17"
+        fi
+
+        cat <<EOF
+
+<Placemark> 
+<LineString>
+<coordinates>
+$LONGLAT
+$NEXTLONGLAT
+</coordinates>
+</LineString>
+<Style> 
+<LineStyle>  
+<color>#$COLOR</color>
+</LineStyle> 
+</Style>
+</Placemark>
+
+EOF
+    fi
+done
 }
 
 footer() {
     cat <<FOOTER
-  </Document>
+</Document>
 </kml>
 FOOTER
 }
@@ -163,9 +243,12 @@ if [ -z "$1" ]; then
 fi
 
 header
-for h in "$@" ; do
-    for ip in $(host $h|awk '/has address/ {print $4}'); do
-	tracehost "$ip" "$h"
-    done
-done
+#echo -e "$@"
+#for h in "$@" ; do
+    # Trace all locations if host have many IP addresses
+    #for ip in $(host $h|awk '/has address/ {print $4}'); do
+ip=($(host $1|awk '/has address/ {print $4}'))
+tracehost "${ip[0]}" "$h"
+    #done
+#done
 footer
