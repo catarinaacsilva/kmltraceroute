@@ -25,7 +25,7 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 
 * **Catarina Silva** - [catarinaacsilva](https://github.com/catarinaacsilva)
 
-Based (forked) [petterreinholdtsen repository](https://github.com/petterreinholdtsen/kmltraceroute)
+Based (forked) [petterreinholdtsen](https://github.com/petterreinholdtsen/kmltraceroute) repository
 
 ## License
 
