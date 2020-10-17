@@ -25,11 +25,11 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 
 | Tables                                        | Description   |
 | ----------------------------------------------|:-------------:|
-| ![destination](icons/destination.png)         | right-aligned |
-| ![lost](icons/lost.png)                       | centered      |    
-| ![hostingservers](icons/hosting-servers.png)  | are neat      |
-| ![backup](icons/backup.png)                   | are neat      | 
-| ![flag](icons/flag.png)                       | are neat      |   
+| ![destination](icons/destination.png =250x)         | right-aligned |
+| ![lost](icons/lost.png =250x)                       | centered      |    
+| ![hostingservers](icons/hosting-servers.png =250x)  | are neat      |
+| ![backup](icons/backup.png =250x)                   | are neat      | 
+| ![flag](icons/flag.png =250x)                       | are neat      |   
 
 
 ## Authors
