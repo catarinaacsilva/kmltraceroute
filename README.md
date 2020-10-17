@@ -23,9 +23,9 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 
 # Symbol description
 
-| Tables                                        | Description   |
-| ----------------------------------------------|:-------------:|
-| ![destination](icons/destination.png)         | right-aligned |
+| Tables                                                    | Description   |
+| ----------------------------------------------------------|:-------------:|
+| ![destination](icons/destination.png | width=100)         | right-aligned |
 
 
 
