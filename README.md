@@ -25,7 +25,7 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 
 | Tables                                        | Description   |
 | ----------------------------------------------|:-------------:|
-| ![destination](icons/destination.png =20x20)         | right-aligned |
+| ![destination](icons/destination.png)         | right-aligned |
 
 
 
