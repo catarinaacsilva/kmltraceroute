@@ -21,6 +21,17 @@ The code use this [api](https://freegeoip.live/) to search the geolocation of IP
 2. Open, e.g this [link](http://kmlviewer.nsspot.net/) and choose file `trace.kml`
 
 
+# Symbol description
+
+| Tables                                        | Description   |
+| ----------------------------------------------|:-------------:|
+| ![destination](icons/destination.png)         | right-aligned |
+| ![lost](icons/lost.png)                       | centered      |    
+| ![hostingservers](icons/hosting-servers.png)  | are neat      |
+| ![backup](icons/backup.png)                   | are neat      | 
+| ![flag](icons/flag.png)                       | are neat      |   
+
+
 ## Authors
 
 * **Catarina Silva** - [catarinaacsilva](https://github.com/catarinaacsilva)
